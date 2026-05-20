@@ -9,11 +9,13 @@ import '../../main.dart';
 class ProviderDetailScreen extends StatelessWidget {
   final Provider provider;
   final bool isTopChoice;
+  final String? reasoning;
 
   const ProviderDetailScreen({
     super.key,
     required this.provider,
     required this.isTopChoice,
+    this.reasoning,
   });
 
   @override
@@ -90,6 +92,47 @@ class ProviderDetailScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (reasoning != null && reasoning!.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isTopChoice 
+                            ? Theme.of(context).colorScheme.primary.withOpacity(0.15) 
+                            : Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isTopChoice 
+                              ? Theme.of(context).colorScheme.primary.withOpacity(0.4) 
+                              : Theme.of(context).colorScheme.onSurface.withOpacity(0.1)
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.auto_awesome, 
+                            size: 20, 
+                            color: isTopChoice ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.7)
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              reasoning!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontStyle: FontStyle.italic,
+                                color: isTopChoice 
+                                    ? Theme.of(context).colorScheme.primary 
+                                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

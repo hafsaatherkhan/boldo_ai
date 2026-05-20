@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/provider.dart';
 import '../theme.dart';
@@ -28,6 +29,14 @@ class ProviderListingScreen extends StatefulWidget {
 class _ProviderListingScreenState extends State<ProviderListingScreen> {
   bool _isRanking = false;
   String? _topChoiceId;
+  RankingOutput? _rankingOutput;
+  final List<String> _rankingPhrases = [
+    'Analyzing available providers...',
+    'Calculating distances and ETAs...',
+    'Checking past reliability scores...',
+    'Comparing pricing vs. quality...',
+    'Finalizing best match...',
+  ];
 
   @override
   void initState() {
@@ -36,43 +45,28 @@ class _ProviderListingScreenState extends State<ProviderListingScreen> {
 
     if (widget.rankingFuture != null) {
       _isRanking = true;
+      
       widget.rankingFuture!.then((output) async {
         if (!mounted) return;
         setState(() {
           _isRanking = false;
         });
 
-        if (output != null && output.topChoice != null) {
-          final topId = output.topChoice!.providerId;
+        if (output != null) {
           setState(() {
-            _topChoiceId = topId;
+            _rankingOutput = output;
+            if (output.topChoice != null) {
+              _topChoiceId = output.topChoice!.providerId;
+            }
           });
-          
-          // Fetch full provider details and navigate
-          final doc = await FirebaseFirestore.instance
-              .collection('providers')
-              .doc(topId)
-              .get();
-              
-          if (doc.exists && mounted) {
-            final fullProvider = Provider.fromJson(
-              doc.data() as Map<String, dynamic>,
-              doc.id,
-            );
-            
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ProviderDetailScreen(
-                  provider: fullProvider,
-                  isTopChoice: true,
-                ),
-              ),
-            );
-          }
         }
       });
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
@@ -120,8 +114,30 @@ class _ProviderListingScreenState extends State<ProviderListingScreen> {
             return Provider.fromJson(doc.data() as Map<String, dynamic>, doc.id);
           }).toList();
 
-          // Sort so the top choice is first
+          // Sort providers
           providers.sort((a, b) {
+            if (_rankingOutput != null) {
+              // Try to find AI generated scores
+              double scoreA = 0.0;
+              double scoreB = 0.0;
+              
+              try {
+                final rpA = _rankingOutput!.rankedProviders.firstWhere((p) => p.providerId == a.providerId);
+                scoreA = rpA.score;
+              } catch (_) {}
+              
+              try {
+                final rpB = _rankingOutput!.rankedProviders.firstWhere((p) => p.providerId == b.providerId);
+                scoreB = rpB.score;
+              } catch (_) {}
+
+              // If AI gave them different scores, sort by AI score (highest first)
+              if (scoreA != scoreB) {
+                return scoreB.compareTo(scoreA);
+              }
+            }
+            
+            // Fallback: If no AI ranking yet or scores are identical, use top choice & raw rating
             if (a.providerId == _topChoiceId) return -1;
             if (b.providerId == _topChoiceId) return 1;
             return b.rating.compareTo(a.rating);
@@ -130,33 +146,7 @@ class _ProviderListingScreenState extends State<ProviderListingScreen> {
           return Column(
             children: [
               if (_isRanking)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  margin: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8B5CF6).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFF8B5CF6).withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(
-                        width: 20, 
-                        height: 20, 
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF8B5CF6))
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Antigravity is ranking providers...',
-                        style: TextStyle(
-                          color: BolDoTheme.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _RankingProgressIsland(phrases: _rankingPhrases),
               Expanded(
                 child: ListView.builder(
                   padding: EdgeInsets.fromLTRB(16.0, _isRanking ? 0 : 16.0, 16.0, 100.0),
@@ -164,6 +154,20 @@ class _ProviderListingScreenState extends State<ProviderListingScreen> {
                   itemBuilder: (context, index) {
                     final provider = providers[index];
                     final isTopChoice = provider.providerId == _topChoiceId;
+                    
+                    String? reasoning;
+                    if (_rankingOutput != null) {
+                      if (isTopChoice) {
+                        reasoning = _rankingOutput!.topChoice?.reasoning;
+                      } else {
+                        try {
+                          final rp = _rankingOutput!.rankedProviders.firstWhere(
+                            (p) => p.providerId == provider.providerId
+                          );
+                          reasoning = rp.reasoning;
+                        } catch (_) {}
+                      }
+                    }
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 16.0),
@@ -175,6 +179,7 @@ class _ProviderListingScreenState extends State<ProviderListingScreen> {
                               builder: (context) => ProviderDetailScreen(
                                 provider: provider,
                                 isTopChoice: isTopChoice,
+                                reasoning: reasoning,
                               ),
                             ),
                           );
@@ -284,7 +289,49 @@ class _ProviderListingScreenState extends State<ProviderListingScreen> {
                                             ),
                                           ),
                                         ],
-                                      )
+                                      ),
+                                      if (reasoning != null && reasoning.isNotEmpty) ...[
+                                        const SizedBox(height: 12),
+                                        Container(
+                                          padding: const EdgeInsets.all(8),
+                                          decoration: BoxDecoration(
+                                            color: isTopChoice 
+                                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1) 
+                                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.05),
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(
+                                              color: isTopChoice 
+                                                  ? Theme.of(context).colorScheme.primary.withOpacity(0.3) 
+                                                  : Colors.transparent
+                                            ),
+                                          ),
+                                          child: Row(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Icon(
+                                                Icons.auto_awesome, 
+                                                size: 14, 
+                                                color: isTopChoice 
+                                                    ? Theme.of(context).colorScheme.primary 
+                                                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.5)
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Expanded(
+                                                child: Text(
+                                                  reasoning,
+                                                  style: TextStyle(
+                                                    color: isTopChoice 
+                                                        ? Theme.of(context).colorScheme.primary 
+                                                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                                                    fontSize: 12,
+                                                    fontStyle: FontStyle.italic,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -306,3 +353,106 @@ class _ProviderListingScreenState extends State<ProviderListingScreen> {
     );
   }
 }
+
+class _RankingProgressIsland extends StatefulWidget {
+  final List<String> phrases;
+  const _RankingProgressIsland({Key? key, required this.phrases}) : super(key: key);
+
+  @override
+  State<_RankingProgressIsland> createState() => _RankingProgressIslandState();
+}
+
+class _RankingProgressIslandState extends State<_RankingProgressIsland> {
+  int _step = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      setState(() {
+        if (_step < widget.phrases.length - 1) {
+          _step++;
+        }
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(24), // Dynamic island rounded shape
+        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 2.0),
+            child: SizedBox(
+              width: 18, 
+              height: 18, 
+              child: CircularProgressIndicator(strokeWidth: 2, color: Theme.of(context).colorScheme.primary)
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: List.generate(_step + 1, (index) {
+                final isCurrent = index == _step;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2.0),
+                        child: Icon(
+                          isCurrent ? Icons.circle_outlined : Icons.check_circle, 
+                          size: 14, 
+                          color: isCurrent 
+                              ? Theme.of(context).colorScheme.onSurface.withOpacity(0.3) 
+                              : Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          widget.phrases[index],
+                          style: TextStyle(
+                            color: isCurrent 
+                              ? Theme.of(context).textTheme.bodyLarge?.color 
+                              : Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
