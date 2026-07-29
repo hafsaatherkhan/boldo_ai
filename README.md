@@ -1,93 +1,91 @@
-# ROOT README.md
+<div align="center">
 
-# BolDo — AI Service Orchestrator
+<img src="https://placehold.co/900x220/3B091E/E2B8CA?text=BolDo&font=roboto" width="100%"/>
 
-BolDo is an AI-powered service orchestration platform focused on home services such as:
-- AC Technicians
-- Electricians
-- Plumbers
-- Carpenters
-- Home Cleaning
-- Appliance Repair
-- Painters
+# 🏠 BolDo — AI Service Orchestrator
 
-The system uses an agentic AI workflow to automate:
-- multilingual intent understanding
-- provider discovery
-- intelligent ranking
-- dynamic pricing
-- booking simulation
-- notifications
-- follow-up automation
-- dispute handling
+**An AI-powered service orchestration platform for home services, using an agentic AI workflow to automate the entire booking lifecycle.**
 
-Built for:
-Google Antigravity Hackathon — Challenge 2
+<p>
+  <img src="https://img.shields.io/badge/Flutter-3C1C11?style=for-the-badge&logo=flutter&logoColor=E2B8CA" />
+  <img src="https://img.shields.io/badge/Dart-3C1C11?style=for-the-badge&logo=dart&logoColor=E2B8CA" />
+  <img src="https://img.shields.io/badge/Firebase-94325C?style=for-the-badge&logo=firebase&logoColor=FCF3FA" />
+  <img src="https://img.shields.io/badge/Gemini%20API-3B091E?style=for-the-badge&logo=googlegemini&logoColor=E2B8CA" />
+</p>
 
----
+</div>
 
-# Core Features
+Built for **Google Antigravity Hackathon — Challenge 2**.
 
-- Urdu / Roman Urdu / English support
-- AI-powered provider matching
-- Dynamic pricing engine
-- Booking lifecycle simulation
-- AI reasoning traces
-- Voice input/output support
-- Dispute handling workflows
-- Firebase backend integration
+Home services covered: AC Technicians · Electricians · Plumbers · Carpenters · Home Cleaning · Appliance Repair · Painters
 
----
+## 🤖 What It Automates
 
-# Tech Stack
+The system uses an agentic AI workflow to handle:
 
-Frontend:
+- Multilingual intent understanding
+- Provider discovery
+- Intelligent ranking
+- Dynamic pricing
+- Booking simulation
+- Notifications
+- Follow-up automation
+- Dispute handling
+
+## ✨ Core Features
+
+- 🗣️ Urdu / Roman Urdu / English support
+- 🎯 AI-powered provider matching
+- 💰 Dynamic pricing engine
+- 📅 Booking lifecycle simulation
+- 🧠 AI reasoning traces
+- 🎙️ Voice input/output support
+- ⚖️ Dispute handling workflows
+- 🔥 Firebase backend integration
+
+## 🛠️ Tech Stack
+
+**Frontend**
 - Flutter
 
-Backend:
+**Backend**
 - Firebase Firestore
 - Firebase Authentication
 - Firebase Cloud Messaging
 
-AI:
+**AI**
 - Gemini API
 - Antigravity orchestration
 
----
+## 📁 Project Structure
 
-# Documentation
-
-All project documentation is available inside:
-
-docs/
-
-Start here:
-docs/README.md
-
----
-
-# Project Structure
-
+```
 lib/
 docs/
 assets/
 firebase/
+```
 
----
+## 📚 Documentation
 
-# Team Workflow
+All project documentation lives inside [`docs/`](./docs) — start at [`docs/README.md`](./docs/README.md).
+
+## 🧭 Team Workflow
 
 - Documentation-driven development
 - Agent-wise implementation
 - GitHub collaboration
 - Antigravity-assisted orchestration
 
+## 🔎 What This Project Demonstrates
+
+- Autonomous AI decision-making
+- Multi-agent orchestration
+- Reasoning transparency
+- Workflow automation
+
 ---
 
-# Important
-
-This project demonstrates:
-- autonomous AI decision-making
-- multi-agent orchestration
-- reasoning transparency
-- workflow automation
+<div align="center">
+<sub>Built with 🩷 by <a href="https://github.com/hafsaatherkhan">Hafsa Ather Khan</a> & <a href="https://github.com/cyber01012">Suhaima</a></sub>
+</div>
